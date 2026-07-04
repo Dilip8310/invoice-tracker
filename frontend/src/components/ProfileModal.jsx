@@ -73,11 +73,12 @@ const ProfileModal = ({ active, onClose, currentUser, onUpdateUser, onShowToast 
 
       if (response.ok) {
         onShowToast('Profile updated successfully!');
-        // Update user state globally in App.jsx
         onUpdateUser({
           id: data.id,
           fullName: data.fullName,
-          email: data.email
+          email: data.email,
+          role: data.role || currentUser.role,
+          approved: data.approved !== undefined ? data.approved : currentUser.approved
         });
         onClose();
       } else {

@@ -154,12 +154,12 @@ a {
   flex: 1;
   margin-left: 100px;
   padding: 72px 48px;
-  max-width: 900px;
+  max-width: 1200px;
   margin-right: auto;
-  margin-left: calc(100px + (100% - 1000px) / 2);
+  margin-left: calc(100px + (100% - 1300px) / 2);
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1300px) {
   .main-content {
     margin-left: 100px;
     padding: 48px 32px;
@@ -328,6 +328,14 @@ a {
   background-color: var(--color-orange);
 }
 
+.status-overdue {
+  background-color: rgba(236, 87, 87, 0.08);
+  color: var(--color-red);
+}
+.status-overdue::before {
+  background-color: var(--color-red);
+}
+
 .status-draft {
   background-color: rgba(223, 227, 250, 0.06);
   color: var(--text-secondary);
@@ -356,18 +364,11 @@ a {
   font-size: 0.95rem;
 }
 
-/* Stats Row */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
   margin-bottom: 32px;
-}
-
-@media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 .stat-card {

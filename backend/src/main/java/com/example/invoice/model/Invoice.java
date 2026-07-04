@@ -73,6 +73,9 @@ public class Invoice {
     @com.fasterxml.jackson.annotation.JsonIgnore
     private User user;
 
+    @Column(name = "created_by")
+    private String createdBy;
+
     // Constructors
     public Invoice() {
         this.total = BigDecimal.ZERO;
@@ -267,5 +270,13 @@ public class Invoice {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String getCreatedBy() {
+        return createdBy != null ? createdBy : "Unknown";
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 }

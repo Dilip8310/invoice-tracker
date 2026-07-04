@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Random;
 import java.time.LocalDateTime;
@@ -68,6 +69,11 @@ public class UserService {
         if (!passwordEncoder.matches(password, user.getPassword())) {
             logger.warn("[USER SERVICE] loginUser: Password mismatch for email: {}", email);
             throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        if ("USER".equals(user.getRole()) && !user.isApproved()) {
+            logger.warn("[USER SERVICE] loginUser: Login blocked, account pending approval: {}", email);
+            throw new IllegalArgumentException("Your account registration is pending approval by a Super Admin.");
         }
 
         logger.info("[USER SERVICE] loginUser: Successful authentication for email: {}", email);
@@ -289,5 +295,27 @@ public class UserService {
         // Clear verification cache
         pendingResets.remove(email);
         logger.info("[USER SERVICE] resetPasswordWithOtp: Password successfully reset for user: {}", email);
+    }
+
+    public List<User> getAllUsersByRole(String role) {
+        logger.info("[USER SERVICE] getAllUsersByRole: Fetching users with role: {}", role);
+        return userRepository.findAll().stream()
+                .filter(u -> role.equals(u.getRole()))
+                .toList();
+    }
+
+    public User approveUser(Long id) {
+        logger.info("[USER SERVICE] approveUser: Approving user ID: {}", id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
+        user.setApproved(true);
+        return userRepository.save(user);
+    }
+
+    public void deleteUser(Long id) {
+        logger.info("[USER SERVICE] deleteUser: Deleting user ID: {}", id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
+        userRepository.delete(user);
     }
 }

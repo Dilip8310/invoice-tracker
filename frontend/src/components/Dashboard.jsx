@@ -18,17 +18,20 @@ const Dashboard = ({
   const totalInvoices = invoices.length;
   const paidInvoices = invoices.filter(inv => inv.status === 'PAID');
   const pendingInvoices = invoices.filter(inv => inv.status === 'PENDING');
+  const overdueInvoices = invoices.filter(inv => inv.status === 'OVERDUE');
   const draftInvoices = invoices.filter(inv => inv.status === 'DRAFT');
 
   const totalAmount = invoices.reduce((acc, curr) => acc + (curr.total || 0), 0);
   const paidAmount = paidInvoices.reduce((acc, curr) => acc + (curr.total || 0), 0);
-  const pendingAmount = invoices
-    .filter(inv => inv.status !== 'PAID')
-    .reduce((acc, curr) => acc + (curr.total || 0), 0);
+  const pendingAmount = pendingInvoices.reduce((acc, curr) => acc + (curr.total || 0), 0);
+  const overdueAmount = overdueInvoices.reduce((acc, curr) => acc + (curr.total || 0), 0);
+  const draftAmount = draftInvoices.reduce((acc, curr) => acc + (curr.total || 0), 0);
+  const outstandingAmount = pendingAmount + draftAmount;
 
   // Ratio calculations
   const paidRatio = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
-  const pendingRatio = totalAmount > 0 ? (pendingAmount / totalAmount) * 100 : 0;
+  const outstandingRatio = totalAmount > 0 ? (outstandingAmount / totalAmount) * 100 : 0;
+  const overdueRatio = totalAmount > 0 ? (overdueAmount / totalAmount) * 100 : 0;
 
   // Formatting currency
   const formatCurrency = (value) => {
@@ -113,10 +116,19 @@ const Dashboard = ({
 
         <div className="card stat-card">
           <span className="stat-title">Total Outstanding</span>
-          <span className="stat-value" style={{ color: 'var(--color-orange)' }}>{formatCurrency(pendingAmount)}</span>
+          <span className="stat-value" style={{ color: 'var(--color-orange)' }}>{formatCurrency(outstandingAmount)}</span>
           <span className="stat-sub">{pendingInvoices.length + draftInvoices.length} outstanding</span>
           <div className="progress-bar-container">
-            <div className="progress-bar-fill" style={{ width: `${pendingRatio}%`, background: 'var(--color-orange)' }}></div>
+            <div className="progress-bar-fill" style={{ width: `${outstandingRatio}%`, background: 'var(--color-orange)' }}></div>
+          </div>
+        </div>
+
+        <div className="card stat-card">
+          <span className="stat-title">Total Overdue</span>
+          <span className="stat-value" style={{ color: 'var(--color-red)' }}>{formatCurrency(overdueAmount)}</span>
+          <span className="stat-sub">{overdueInvoices.length} overdue invoices</span>
+          <div className="progress-bar-container">
+            <div className="progress-bar-fill" style={{ width: `${overdueRatio}%`, background: 'var(--color-red)' }}></div>
           </div>
         </div>
 
@@ -128,6 +140,9 @@ const Dashboard = ({
             </span>
             <span style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
               <span>Pending:</span> <strong>{pendingInvoices.length}</strong>
+            </span>
+            <span style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Overdue:</span> <strong style={{ color: 'var(--color-red)' }}>{overdueInvoices.length}</strong>
             </span>
             <span style={{ fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
               <span>Draft:</span> <strong>{draftInvoices.length}</strong>
@@ -187,6 +202,7 @@ const Dashboard = ({
           <option value="all">Filter by status: All</option>
           <option value="paid">Paid</option>
           <option value="pending">Pending</option>
+          <option value="overdue">Overdue</option>
           <option value="draft">Draft</option>
         </select>
 
@@ -241,6 +257,9 @@ const Dashboard = ({
               </div>
               <div className="invoice-client">
                 {inv.clientName}
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '2px' }}>
+                  By {inv.createdBy || 'System'}
+                </div>
               </div>
               <div className="invoice-amount">
                 {formatCurrency(inv.total)}

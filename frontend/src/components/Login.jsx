@@ -20,6 +20,7 @@ const Login = ({ onSuccess, onShowToast }) => {
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [infoMessage, setInfoMessage] = useState('');
 
   const validate = () => {
     const errs = {};
@@ -122,8 +123,20 @@ const Login = ({ onSuccess, onShowToast }) => {
       const data = await response.json();
 
       if (response.ok) {
-        onShowToast('Account verified and registered successfully!');
-        onSuccess(data); // Logs user in directly
+        if (data.approved === false) {
+          onShowToast('Registration submitted for approval! Once approved, you can log in.', 'success');
+          setInfoMessage('Account sent for verification! Once approved by a Super Admin, you can log in.');
+          setIsOtpMode(false);
+          setIsLoginTab(true);
+          setFullName('');
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+          setOtp('');
+        } else {
+          onShowToast('Account verified and registered successfully!');
+          onSuccess(data); // Logs user in directly
+        }
       } else {
         setErrors({ otp: data.otp || 'Verification failed' });
         onShowToast(data.otp || 'Incorrect verification OTP code', 'error');
@@ -265,6 +278,7 @@ const Login = ({ onSuccess, onShowToast }) => {
               onClick={() => {
                 setIsLoginTab(true);
                 setErrors({});
+                setInfoMessage('');
               }}
             >
               Login
@@ -275,6 +289,7 @@ const Login = ({ onSuccess, onShowToast }) => {
               onClick={() => {
                 setIsLoginTab(false);
                 setErrors({});
+                setInfoMessage('');
               }}
             >
               Register
@@ -286,6 +301,30 @@ const Login = ({ onSuccess, onShowToast }) => {
         <form onSubmit={handleSubmit} className="login-form">
           {errors.global && (
             <div className="auth-error-alert">{errors.global}</div>
+          )}
+
+          {infoMessage && (
+            <div className="auth-info-alert" style={{
+              background: 'rgba(51, 214, 159, 0.08)',
+              color: 'var(--color-green)',
+              padding: '12px 16px',
+              borderRadius: 'var(--border-radius-md)',
+              fontSize: '0.9rem',
+              fontWeight: '500',
+              lineHeight: '1.4',
+              marginBottom: '20px',
+              border: '1px solid rgba(51, 214, 159, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>{infoMessage}</span>
+            </div>
           )}
 
           {isForgotPasswordMode ? (

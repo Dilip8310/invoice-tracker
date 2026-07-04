@@ -1,6 +1,8 @@
 package com.example.invoice.controller;
 
 import com.example.invoice.model.User;
+import com.example.invoice.model.Activity;
+import com.example.invoice.repository.ActivityRepository;
 import com.example.invoice.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -18,10 +21,12 @@ public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
     private final UserService userService;
+    private final ActivityRepository activityRepository;
 
     @Autowired
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, ActivityRepository activityRepository) {
         this.userService = userService;
+        this.activityRepository = activityRepository;
     }
 
     @PostMapping("/register/request-otp")
@@ -86,6 +91,8 @@ public class AuthController {
             response.put("id", registered.getId());
             response.put("fullName", registered.getFullName());
             response.put("email", registered.getEmail());
+            response.put("role", registered.getRole());
+            response.put("approved", registered.isApproved());
 
             logger.info("[AUTH CONTROLLER] verifyOtp: Successfully verified email {} (ID: {})", email, registered.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -124,6 +131,7 @@ public class AuthController {
             response.put("id", user.getId());
             response.put("fullName", user.getFullName());
             response.put("email", user.getEmail());
+            response.put("role", user.getRole());
 
             logger.info("[AUTH CONTROLLER] loginUser: Successfully logged in email: {} (ID: {})", email, user.getId());
             return ResponseEntity.ok(response);
@@ -180,6 +188,8 @@ public class AuthController {
             response.put("id", updated.getId());
             response.put("fullName", updated.getFullName());
             response.put("email", updated.getEmail());
+            response.put("role", updated.getRole());
+            response.put("approved", updated.isApproved());
             
             logger.info("[AUTH CONTROLLER] updateProfile: Successfully updated profile for user ID: {}", userId);
             return ResponseEntity.ok(response);
@@ -257,6 +267,85 @@ public class AuthController {
         } catch (Exception e) {
             logger.error("[AUTH CONTROLLER] resetPassword: System error for email: {}", email, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/admin/users")
+    public ResponseEntity<?> getPendingUsers(@RequestHeader("User-Id") Long userId) {
+        logger.info("[AUTH CONTROLLER] getPendingUsers: Admin ID: {} requesting list of users", userId);
+        try {
+            User admin = userService.getUserById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            if (!"ADMIN".equals(admin.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Only Super Admin can access this resource"));
+            }
+            
+            List<User> users = userService.getAllUsersByRole("USER");
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            logger.error("[AUTH CONTROLLER] getPendingUsers error", e);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/admin/users/{id}/approve")
+    public ResponseEntity<?> approveUser(
+            @PathVariable Long id,
+            @RequestHeader("User-Id") Long userId) {
+        logger.info("[AUTH CONTROLLER] approveUser: Admin ID: {} approving user ID: {}", userId, id);
+        try {
+            User admin = userService.getUserById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            if (!"ADMIN".equals(admin.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Only Super Admin can access this resource"));
+            }
+            
+            User approvedUser = userService.approveUser(id);
+            return ResponseEntity.ok(approvedUser);
+        } catch (Exception e) {
+            logger.error("[AUTH CONTROLLER] approveUser error", e);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/admin/users/{id}/reject")
+    public ResponseEntity<?> rejectUser(
+            @PathVariable Long id,
+            @RequestHeader("User-Id") Long userId) {
+        logger.info("[AUTH CONTROLLER] rejectUser: Admin ID: {} rejecting/deleting user ID: {}", userId, id);
+        try {
+            User admin = userService.getUserById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            if (!"ADMIN".equals(admin.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Only Super Admin can access this resource"));
+            }
+            
+            userService.deleteUser(id);
+            return ResponseEntity.ok(Map.of("message", "User registration rejected and account deleted"));
+        } catch (Exception e) {
+            logger.error("[AUTH CONTROLLER] rejectUser error", e);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/admin/activities")
+    public ResponseEntity<?> getAdminActivities(@RequestHeader("User-Id") Long userId) {
+        logger.info("[AUTH CONTROLLER] getAdminActivities: Admin ID: {} requesting list of activities", userId);
+        try {
+            User admin = userService.getUserById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            if (!"ADMIN".equals(admin.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Only Super Admin can access this resource"));
+            }
+            
+            List<Activity> activities = activityRepository.findAll();
+            List<Activity> sorted = activities.stream()
+                    .sorted((a, b) -> b.getId().compareTo(a.getId()))
+                    .toList();
+            return ResponseEntity.ok(sorted);
+        } catch (Exception e) {
+            logger.error("[AUTH CONTROLLER] getAdminActivities error", e);
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }

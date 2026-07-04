@@ -5,6 +5,7 @@ import InvoiceForm from './components/InvoiceForm';
 import Login from './components/Login';
 import ProfileModal from './components/ProfileModal';
 import ReportsModal from './components/ReportsModal';
+import AdminDashboard from './components/AdminDashboard';
 
 const API_BASE_URL = '/api/invoices';
 
@@ -55,7 +56,7 @@ function App() {
 
   // 1. Fetch Invoices from Spring Boot (scoped by User-Id)
   const fetchInvoices = async () => {
-    if (!currentUser) return;
+    if (!currentUser || currentUser.role === 'ADMIN') return;
     setIsLoading(true);
     try {
       const response = await fetch(API_BASE_URL, {
@@ -277,7 +278,12 @@ function App() {
 
       {/* Main Content Area */}
       <main className="main-content">
-        {selectedInvoice ? (
+        {currentUser.role === 'ADMIN' ? (
+          <AdminDashboard
+            currentUser={currentUser}
+            onShowToast={addToast}
+          />
+        ) : selectedInvoice ? (
           <InvoiceDetail
             invoice={selectedInvoice}
             onBack={() => {

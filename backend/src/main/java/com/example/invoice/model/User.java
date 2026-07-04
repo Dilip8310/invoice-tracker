@@ -23,9 +23,17 @@ public class User {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "role", nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'USER'")
+    private String role = "USER";
+
+    @Column(name = "approved", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean approved = false;
+
     // Constructors
     public User() {
         this.createdAt = LocalDateTime.now();
+        this.role = "USER";
+        this.approved = false;
     }
 
     public User(String fullName, String email, String password) {
@@ -33,6 +41,8 @@ public class User {
         this.email = email;
         this.password = password;
         this.createdAt = LocalDateTime.now();
+        this.role = "USER";
+        this.approved = false;
     }
 
     // Getters and Setters
@@ -74,5 +84,21 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getRole() {
+        return role != null ? role : "USER";
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public boolean isApproved() {
+        return approved;
+    }
+
+    public void setApproved(boolean approved) {
+        this.approved = approved;
     }
 }
