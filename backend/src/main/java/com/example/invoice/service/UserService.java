@@ -42,7 +42,9 @@ public class UserService {
     }
 
     public User registerNewUser(User user) {
+        logger.info("[USER SERVICE] registerNewUser: Registering user email: {}", user.getEmail());
         if (emailExists(user.getEmail())) {
+            logger.warn("[USER SERVICE] registerNewUser: Registration failed, email already exists: {}", user.getEmail());
             throw new IllegalArgumentException("An account already exists with that email address");
         }
 
@@ -50,17 +52,25 @@ public class UserService {
         String encryptedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(encryptedPassword);
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        logger.info("[USER SERVICE] registerNewUser: Successfully registered user ID: {}", saved.getId());
+        return saved;
     }
 
     public User loginUser(String email, String password) {
+        logger.info("[USER SERVICE] loginUser: Login attempt for email: {}", email);
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+                .orElseThrow(() -> {
+                    logger.warn("[USER SERVICE] loginUser: Invalid email/password attempt for: {}", email);
+                    return new IllegalArgumentException("Invalid email or password");
+                });
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
+            logger.warn("[USER SERVICE] loginUser: Password mismatch for email: {}", email);
             throw new IllegalArgumentException("Invalid email or password");
         }
 
+        logger.info("[USER SERVICE] loginUser: Successful authentication for email: {}", email);
         return user;
     }
 
@@ -69,23 +79,32 @@ public class UserService {
     }
 
     public User updateUserProfile(Long userId, String fullName, String currentPassword, String newPassword) {
+        logger.info("[USER SERVICE] updateUserProfile: Request to update profile for user ID: {}", userId);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+                .orElseThrow(() -> {
+                    logger.error("[USER SERVICE] updateUserProfile: User not found with ID: {}", userId);
+                    return new IllegalArgumentException("User not found with id: " + userId);
+                });
 
         if (fullName != null && !fullName.trim().isEmpty()) {
+            logger.info("[USER SERVICE] updateUserProfile: Updating full name of user ID: {} to '{}'", userId, fullName);
             user.setFullName(fullName.trim());
         }
 
         if (currentPassword != null && !currentPassword.trim().isEmpty() &&
             newPassword != null && !newPassword.trim().isEmpty()) {
             
+            logger.info("[USER SERVICE] updateUserProfile: Updating password of user ID: {}", userId);
             if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+                logger.warn("[USER SERVICE] updateUserProfile: Current password mismatch for user ID: {}", userId);
                 throw new IllegalArgumentException("Incorrect current password");
             }
             user.setPassword(passwordEncoder.encode(newPassword));
         }
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        logger.info("[USER SERVICE] updateUserProfile: Successfully updated user ID: {}", saved.getId());
+        return saved;
     }
 
     // In-memory cache for pending OTP registrations
@@ -154,17 +173,21 @@ public class UserService {
     }
 
     public User verifyOtpAndRegister(String email, String otp) {
+        logger.info("[USER SERVICE] verifyOtpAndRegister: Verifying OTP for email: {}", email);
         PendingUser pendingUser = pendingRegistrations.get(email);
         if (pendingUser == null) {
+            logger.warn("[USER SERVICE] verifyOtpAndRegister: No pending request found for email: {}", email);
             throw new IllegalArgumentException("No pending registration request found for this email");
         }
 
         if (pendingUser.isExpired()) {
+            logger.warn("[USER SERVICE] verifyOtpAndRegister: OTP expired for email: {}", email);
             pendingRegistrations.remove(email);
             throw new IllegalArgumentException("OTP code has expired. Please register again.");
         }
 
         if (!pendingUser.getOtp().equals(otp)) {
+            logger.warn("[USER SERVICE] verifyOtpAndRegister: Incorrect OTP entered for email: {}", email);
             throw new IllegalArgumentException("Incorrect OTP verification code");
         }
 
@@ -174,6 +197,7 @@ public class UserService {
 
         // Clear verification cache
         pendingRegistrations.remove(email);
+        logger.info("[USER SERVICE] verifyOtpAndRegister: Successfully verified and registered user: {}", email);
         return registered;
     }
 }

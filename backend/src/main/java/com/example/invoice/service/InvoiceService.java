@@ -8,6 +8,8 @@ import com.example.invoice.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,6 +20,8 @@ import java.util.Random;
 @Service
 @Transactional
 public class InvoiceService {
+
+    private static final Logger logger = LoggerFactory.getLogger(InvoiceService.class);
 
     private final InvoiceRepository invoiceRepository;
     private final UserRepository userRepository;
@@ -30,6 +34,7 @@ public class InvoiceService {
     }
 
     public List<Invoice> getAllInvoices(Long userId, String status) {
+        logger.info("[INVOICE SERVICE] getAllInvoices: Querying database for user ID: {}, status: {}", userId, status);
         if (status != null && !status.trim().isEmpty()) {
             return invoiceRepository.findByUserIdAndStatus(userId, status.toUpperCase());
         }
@@ -37,13 +42,18 @@ public class InvoiceService {
     }
 
     public Optional<Invoice> getInvoiceById(Long id, Long userId) {
+        logger.info("[INVOICE SERVICE] getInvoiceById: Querying database for invoice ID: {}, user ID: {}", id, userId);
         return invoiceRepository.findById(id)
                 .filter(inv -> inv.getUser() != null && inv.getUser().getId().equals(userId));
     }
 
     public Invoice createInvoice(Invoice invoice, Long userId) {
+        logger.info("[INVOICE SERVICE] createInvoice: Processing invoice creation for user ID: {}", userId);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+                .orElseThrow(() -> {
+                    logger.error("[INVOICE SERVICE] createInvoice: User not found with ID: {}", userId);
+                    return new IllegalArgumentException("User not found with id: " + userId);
+                });
         
         invoice.setUser(user);
 
@@ -81,15 +91,21 @@ public class InvoiceService {
         }
         invoice.calculateTotal();
 
+        logger.info("[INVOICE SERVICE] createInvoice: Saving invoice number: {} to database", invoice.getInvoiceNumber());
         return invoiceRepository.save(invoice);
     }
 
     public Invoice updateInvoice(Long id, Invoice invoiceDetails, Long userId) {
+        logger.info("[INVOICE SERVICE] updateInvoice: Processing update for invoice ID: {}, user ID: {}", id, userId);
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Invoice not found with id: " + id));
+                .orElseThrow(() -> {
+                    logger.error("[INVOICE SERVICE] updateInvoice: Invoice not found with ID: {}", id);
+                    return new IllegalArgumentException("Invoice not found with id: " + id);
+                });
 
         // Authorization check
         if (invoice.getUser() == null || !invoice.getUser().getId().equals(userId)) {
+            logger.warn("[INVOICE SERVICE] updateInvoice: Unauthorized attempt to edit invoice ID: {} by user ID: {}", id, userId);
             throw new IllegalArgumentException("Unauthorized access to this invoice");
         }
 
@@ -135,31 +151,44 @@ public class InvoiceService {
         }
         invoice.calculateTotal();
 
+        logger.info("[INVOICE SERVICE] updateInvoice: Saving updated invoice ID: {} to database", id);
         return invoiceRepository.save(invoice);
     }
 
     public void deleteInvoice(Long id, Long userId) {
+        logger.info("[INVOICE SERVICE] deleteInvoice: Processing delete for invoice ID: {}, user ID: {}", id, userId);
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Invoice not found with id: " + id));
+                .orElseThrow(() -> {
+                    logger.error("[INVOICE SERVICE] deleteInvoice: Invoice not found with ID: {}", id);
+                    return new IllegalArgumentException("Invoice not found with id: " + id);
+                });
         
         // Authorization check
         if (invoice.getUser() == null || !invoice.getUser().getId().equals(userId)) {
+            logger.warn("[INVOICE SERVICE] deleteInvoice: Unauthorized attempt to delete invoice ID: {} by user ID: {}", id, userId);
             throw new IllegalArgumentException("Unauthorized access to this invoice");
         }
         
         invoiceRepository.delete(invoice);
+        logger.info("[INVOICE SERVICE] deleteInvoice: Successfully deleted invoice ID: {}", id);
     }
 
     public Invoice updateStatus(Long id, String status, Long userId) {
+        logger.info("[INVOICE SERVICE] updateStatus: Processing status change for invoice ID: {} to '{}', user ID: {}", id, status, userId);
         Invoice invoice = invoiceRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Invoice not found with id: " + id));
+                .orElseThrow(() -> {
+                    logger.error("[INVOICE SERVICE] updateStatus: Invoice not found with ID: {}", id);
+                    return new IllegalArgumentException("Invoice not found with id: " + id);
+                });
         
         // Authorization check
         if (invoice.getUser() == null || !invoice.getUser().getId().equals(userId)) {
+            logger.warn("[INVOICE SERVICE] updateStatus: Unauthorized attempt to change status of invoice ID: {} by user ID: {}", id, userId);
             throw new IllegalArgumentException("Unauthorized access to this invoice");
         }
 
         invoice.setStatus(status.toUpperCase());
+        logger.info("[INVOICE SERVICE] updateStatus: Saving status updated invoice ID: {} to database", id);
         return invoiceRepository.save(invoice);
     }
 
@@ -175,6 +204,7 @@ public class InvoiceService {
             }
             number = "#" + sb.toString();
         } while (invoiceRepository.existsByInvoiceNumber(number));
+        logger.info("[INVOICE SERVICE] Generated unique invoice number: {}", number);
         return number;
     }
 }
