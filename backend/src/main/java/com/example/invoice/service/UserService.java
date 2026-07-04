@@ -11,6 +11,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Random;
 import java.time.LocalDateTime;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 
 @Service
 @Transactional
@@ -18,11 +20,13 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JavaMailSender mailSender;
 
     @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.mailSender = mailSender;
     }
 
     public boolean emailExists(String email) {
@@ -124,6 +128,22 @@ public class UserService {
         System.out.println("  Expires: " + pendingUser.getExpiryTime());
         System.out.println("==========================================================================");
         System.out.println("\n");
+
+        // Attempt to send a real email using SMTP configuration
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("Your OTP Verification Code");
+            message.setText("Hello " + fullName + ",\n\n"
+                    + "Your 6-digit OTP verification code is: " + otp + "\n\n"
+                    + "This code is valid for 5 minutes. If you did not request this code, please ignore this email.\n\n"
+                    + "Best regards,\n"
+                    + "Invoice Tracker Team");
+            mailSender.send(message);
+            System.out.println("[OTP SERVICE] Successfully sent email to " + email);
+        } catch (Exception e) {
+            System.err.println("[OTP SERVICE] Failed to send email via SMTP, falling back to console printout. Error: " + e.getMessage());
+        }
 
         return otp;
     }
