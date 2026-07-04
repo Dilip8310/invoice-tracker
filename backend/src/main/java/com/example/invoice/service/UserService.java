@@ -13,6 +13,7 @@ import java.util.Random;
 import java.time.LocalDateTime;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 @Transactional
@@ -21,6 +22,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
+
+    @Value("${spring.mail.username:}")
+    private String fromEmail;
 
     @Autowired
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender) {
@@ -132,6 +136,9 @@ public class UserService {
         // Attempt to send a real email using SMTP configuration
         try {
             SimpleMailMessage message = new SimpleMailMessage();
+            if (fromEmail != null && !fromEmail.trim().isEmpty()) {
+                message.setFrom(fromEmail);
+            }
             message.setTo(email);
             message.setSubject("Your OTP Verification Code");
             message.setText("Hello " + fullName + ",\n\n"
