@@ -40,3 +40,27 @@
 2026-07-04T01:44:38.231-04:00  INFO 77644 --- [invoice] [http-nio-8082-exec-6] c.e.i.controller.InvoiceController       : [INVOICE CONTROLLER] getAllInvoices: Fetching all invoices for user ID: 65, filter status: null
 2026-07-04T01:44:38.231-04:00  INFO 77644 --- [invoice] [http-nio-8082-exec-6] c.e.invoice.service.InvoiceService       : [INVOICE SERVICE] getAllInvoices: Querying database for user ID: 65, status: null
 2026-07-04T01:44:38.254-04:00  INFO 77644 --- [invoice] [http-nio-8082-exec-6] c.e.i.controller.InvoiceController       : [INVOICE CONTROLLER] getAllInvoices: Found 0 invoices for user ID: 65
+2026-07-04T02:00:31.162-04:00  INFO 78276 --- [invoice] [main] com.example.invoice.InvoiceApplication   : Starting InvoiceApplication using Java 17.0.12 with PID 78276 (/Users/diliph/invoice-tracker/backend/target/classes started by diliph in /Users/diliph/invoice-tracker/backend)
+2026-07-04T02:00:31.163-04:00  INFO 78276 --- [invoice] [main] com.example.invoice.InvoiceApplication   : No active profile set, falling back to 1 default profile: "default"
+2026-07-04T02:00:31.371-04:00  INFO 78276 --- [invoice] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-07-04T02:00:31.391-04:00  INFO 78276 --- [invoice] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 17 ms. Found 2 JPA repository interfaces.
+2026-07-04T02:00:31.579-04:00  INFO 78276 --- [invoice] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8082 (http)
+2026-07-04T02:00:31.583-04:00  INFO 78276 --- [invoice] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-07-04T02:00:31.584-04:00  INFO 78276 --- [invoice] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.24]
+2026-07-04T02:00:31.611-04:00  INFO 78276 --- [invoice] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-07-04T02:00:31.611-04:00  INFO 78276 --- [invoice] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 434 ms
+2026-07-04T02:00:31.623-04:00  INFO 78276 --- [invoice] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-07-04T02:00:31.731-04:00  INFO 78276 --- [invoice] [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:file:./data/invoicedb user=SA
+2026-07-04T02:00:31.732-04:00  INFO 78276 --- [invoice] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-07-04T02:00:31.736-04:00  INFO 78276 --- [invoice] [main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:file:./data/invoicedb'
+2026-07-04T02:00:31.779-04:00  INFO 78276 --- [invoice] [main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-07-04T02:00:31.794-04:00  INFO 78276 --- [invoice] [main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.2.Final
+2026-07-04T02:00:31.804-04:00  INFO 78276 --- [invoice] [main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-07-04T02:00:31.908-04:00  INFO 78276 --- [invoice] [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-07-04T02:00:31.925-04:00  WARN 78276 --- [invoice] [main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-07-04T02:00:32.246-04:00  INFO 78276 --- [invoice] [main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-07-04T02:00:32.266-04:00  INFO 78276 --- [invoice] [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-07-04T02:00:32.411-04:00  WARN 78276 --- [invoice] [main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-07-04T02:00:32.419-04:00  INFO 78276 --- [invoice] [main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
+2026-07-04T02:00:32.552-04:00  INFO 78276 --- [invoice] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8082 (http) with context path '/'
+2026-07-04T02:00:32.556-04:00  INFO 78276 --- [invoice] [main] com.example.invoice.InvoiceApplication   : Started InvoiceApplication in 1.538 seconds (process running for 1.658)

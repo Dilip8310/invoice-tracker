@@ -200,4 +200,94 @@ public class UserService {
         logger.info("[USER SERVICE] verifyOtpAndRegister: Successfully verified and registered user: {}", email);
         return registered;
     }
+
+    // Cache for pending password resets
+    private final ConcurrentHashMap<String, PendingReset> pendingResets = new ConcurrentHashMap<>();
+
+    public static class PendingReset {
+        private final String email;
+        private final String otp;
+        private final LocalDateTime expiryTime;
+
+        public PendingReset(String email, String otp) {
+            this.email = email;
+            this.otp = otp;
+            this.expiryTime = LocalDateTime.now().plusMinutes(5); // 5 minutes validity
+        }
+
+        public String getEmail() { return email; }
+        public String getOtp() { return otp; }
+        public boolean isExpired() { return LocalDateTime.now().isAfter(expiryTime); }
+        public LocalDateTime getExpiryTime() { return expiryTime; }
+    }
+
+    public String requestPasswordResetOtp(String email) {
+        logger.info("[USER SERVICE] requestPasswordResetOtp: Reset requested for email: {}", email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    logger.warn("[USER SERVICE] requestPasswordResetOtp: Reset failed, no user found for email: {}", email);
+                    return new IllegalArgumentException("No account found with this email address");
+                });
+
+        // Generate a 6-digit OTP
+        Random random = new Random();
+        String otp = String.format("%06d", random.nextInt(1000000));
+
+        PendingReset pendingReset = new PendingReset(email, otp);
+        pendingResets.put(email, pendingReset);
+
+        logger.info("[USER SERVICE] requestPasswordResetOtp: Reset OTP generated successfully for: {}, Code: {}", email, otp);
+
+        // Send Email
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            if (fromEmail != null && !fromEmail.trim().isEmpty()) {
+                message.setFrom(fromEmail);
+            }
+            message.setTo(email);
+            message.setSubject("Password Reset Verification Code");
+            message.setText("Hello " + user.getFullName() + ",\n\n"
+                    + "You requested a password reset. Your 6-digit OTP verification code is: " + otp + "\n\n"
+                    + "This code is valid for 5 minutes. If you did not request this code, please ignore this email.\n\n"
+                    + "Best regards,\n"
+                    + "Invoice Tracker Team");
+            mailSender.send(message);
+            logger.info("[USER SERVICE] requestPasswordResetOtp: Successfully sent reset email to {}", email);
+        } catch (Exception e) {
+            logger.error("[USER SERVICE] requestPasswordResetOtp: Failed to send reset email via SMTP. Error: {}", e.getMessage(), e);
+        }
+
+        return otp;
+    }
+
+    public void resetPasswordWithOtp(String email, String otp, String newPassword) {
+        logger.info("[USER SERVICE] resetPasswordWithOtp: Attempting reset for email: {}", email);
+        PendingReset pendingReset = pendingResets.get(email);
+        if (pendingReset == null) {
+            logger.warn("[USER SERVICE] resetPasswordWithOtp: No reset request found for email: {}", email);
+            throw new IllegalArgumentException("No pending reset request found for this email");
+        }
+
+        if (pendingReset.isExpired()) {
+            logger.warn("[USER SERVICE] resetPasswordWithOtp: Reset OTP expired for email: {}", email);
+            pendingResets.remove(email);
+            throw new IllegalArgumentException("OTP code has expired. Please request a new code.");
+        }
+
+        if (!pendingReset.getOtp().equals(otp)) {
+            logger.warn("[USER SERVICE] resetPasswordWithOtp: Incorrect OTP entered for email: {}", email);
+            throw new IllegalArgumentException("Incorrect OTP verification code");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // Encrypt and update new password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Clear verification cache
+        pendingResets.remove(email);
+        logger.info("[USER SERVICE] resetPasswordWithOtp: Password successfully reset for user: {}", email);
+    }
 }

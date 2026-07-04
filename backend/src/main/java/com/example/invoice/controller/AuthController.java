@@ -193,4 +193,70 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @PostMapping("/forgot-password/request-otp")
+    public ResponseEntity<?> requestResetOtp(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        logger.info("[AUTH CONTROLLER] requestResetOtp: Received request for email: {}", email);
+
+        if (email == null || email.trim().isEmpty()) {
+            logger.warn("[AUTH CONTROLLER] requestResetOtp: Validation failed: Email is required");
+            Map<String, String> errors = new HashMap<>();
+            errors.put("email", "Email is required");
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+        try {
+            String otp = userService.requestPasswordResetOtp(email);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "OTP sent successfully to email");
+            response.put("email", email);
+            response.put("otp", otp);
+            logger.info("[AUTH CONTROLLER] requestResetOtp: OTP successfully generated for password reset for email: {}", email);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            logger.warn("[AUTH CONTROLLER] requestResetOtp: Request failed for email: {}. Error: {}", email, e.getMessage());
+            Map<String, String> err = new HashMap<>();
+            err.put("email", e.getMessage());
+            return ResponseEntity.badRequest().body(err);
+        } catch (Exception e) {
+            logger.error("[AUTH CONTROLLER] requestResetOtp: System error for email: {}", email, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/forgot-password/reset")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String otp = payload.get("otp");
+        String newPassword = payload.get("newPassword");
+
+        logger.info("[AUTH CONTROLLER] resetPassword: Received password reset attempt for email: {}", email);
+
+        Map<String, String> errors = new HashMap<>();
+        if (email == null || email.trim().isEmpty()) errors.put("email", "Email is required");
+        if (otp == null || otp.trim().isEmpty()) errors.put("otp", "OTP verification code is required");
+        if (newPassword == null || newPassword.trim().isEmpty()) errors.put("newPassword", "New password is required");
+
+        if (!errors.isEmpty()) {
+            logger.warn("[AUTH CONTROLLER] resetPassword: Validation failed: {}", errors);
+            return ResponseEntity.badRequest().body(errors);
+        }
+
+        try {
+            userService.resetPasswordWithOtp(email, otp, newPassword);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Password reset successful");
+            logger.info("[AUTH CONTROLLER] resetPassword: Password reset successful for email: {}", email);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            logger.warn("[AUTH CONTROLLER] resetPassword: Reset failed for email: {}. Error: {}", email, e.getMessage());
+            Map<String, String> err = new HashMap<>();
+            err.put("otp", e.getMessage());
+            return ResponseEntity.badRequest().body(err);
+        } catch (Exception e) {
+            logger.error("[AUTH CONTROLLER] resetPassword: System error for email: {}", email, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
