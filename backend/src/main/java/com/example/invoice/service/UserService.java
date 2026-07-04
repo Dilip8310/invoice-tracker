@@ -14,10 +14,14 @@ import java.time.LocalDateTime;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 @Transactional
 public class UserService {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -124,14 +128,8 @@ public class UserService {
         pendingRegistrations.put(email, pendingUser);
 
         // Print the OTP in the server logs
-        System.out.println("\n");
-        System.out.println("==========================================================================");
-        System.out.println("[OTP SERVICE] REGISTRATION OTP CODE GENERATED SUCCESSFULLY!");
-        System.out.println("  Email: " + email);
-        System.out.println("  OTP Code: " + otp);
-        System.out.println("  Expires: " + pendingUser.getExpiryTime());
-        System.out.println("==========================================================================");
-        System.out.println("\n");
+        logger.info("[OTP SERVICE] REGISTRATION OTP CODE GENERATED SUCCESSFULLY! Email: {}, OTP Code: {}, Expires: {}", 
+                    email, otp, pendingUser.getExpiryTime());
 
         // Attempt to send a real email using SMTP configuration
         try {
@@ -147,9 +145,9 @@ public class UserService {
                     + "Best regards,\n"
                     + "Invoice Tracker Team");
             mailSender.send(message);
-            System.out.println("[OTP SERVICE] Successfully sent email to " + email);
+            logger.info("[OTP SERVICE] Successfully sent email to {}", email);
         } catch (Exception e) {
-            System.err.println("[OTP SERVICE] Failed to send email via SMTP, falling back to console printout. Error: " + e.getMessage());
+            logger.error("[OTP SERVICE] Failed to send email via SMTP, falling back to console printout. Error: {}", e.getMessage(), e);
         }
 
         return otp;
